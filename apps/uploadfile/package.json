@@ -1,0 +1,22 @@
+{
+  "name": "uploadfile",
+  "version": "1.0.0",
+  "description": "upload a file",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "cors": "^2.8.5",
+    "express": "^4.17.1",
+    "multer": "^1.4.2",
+    "n-readlines": "^1.0.1",
+    "wordcount": "^1.1.1"
+  },
+  "devDependencies": {
+    "@types/multer": "^1.4.7"
+  }
+}
