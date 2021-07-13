@@ -1,15 +1,22 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy a VPC, subnet, InternetGateway, Route Table and Route
+Description: Deploy a VPC subnet InternetGateway Route Table and Route
+Metadata: 
 
-Resources:
+Parameters: 
+
+Mappings: 
+
+Conditions: 
+
+Resources: 
   VPC:
-    Type: AWS::EC2::VPC
-    Properties:
-      CidrBlock: 10.0.0.0/16
-      EnableDnsHostnames: true
-      Tags:
-      - Key: Name
-        Value: Wordcount VPC
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: 10.0.0.0/16
+        EnableDnsHostnames: true
+        Tags:
+        - Key: Name
+          Value: Wordcount VPC
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
@@ -118,6 +125,7 @@ Resources:
     Properties:
       SubnetId: !Ref PrivateSubnet2
       RouteTableId: !Ref PrivateRouteTable
+
 
 Outputs:
   VPC:
