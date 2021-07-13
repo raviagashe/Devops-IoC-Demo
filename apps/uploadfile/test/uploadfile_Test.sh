@@ -37,6 +37,9 @@ then
   rm -v ${newdata_fname}
   echo 'delete remote file'
   curl -s --location --request GET ${remote_file_name/process/remove}
+  echo ""
+  echo "Testing Successfully completed"
+  echo ""
 else
     echo "Test Failed"
 fi
