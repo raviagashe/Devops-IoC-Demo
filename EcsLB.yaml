@@ -154,7 +154,9 @@ Resources:
 
   Service:
     Type: AWS::ECS::Service
-    DependsOn: HTTPlistener
+    DependsOn: 
+          - HTTPlistener
+          - HTTPSLoadBalancerListener
     Properties:
       ServiceName: wordcount-svc
       Cluster: !Ref Cluster
