@@ -153,6 +153,7 @@ Resources:
 
   Service:
     Type: AWS::ECS::Service
+    DependsOn: HTTPlistener
     Properties:
       ServiceName: wordcount-svc
       Cluster: !Ref Cluster

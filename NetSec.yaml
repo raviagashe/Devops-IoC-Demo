@@ -3,7 +3,7 @@ Description: Deploy a VPC with other networking resources, a Private DNS Zone an
 Parameters: 
   DomainName:
     Type: String
-    Default: wordcount
+    Default: wordcount.com
 
 Resources: 
   VPC:
