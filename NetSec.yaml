@@ -147,6 +147,14 @@ Outputs:
     Description: VPC
     Value: !Ref VPC
 
+  Subnet1ID:
+    Description: Private Subnet 1
+    Value: !Ref PrivateSubnet1
+
+  Subnet2ID:
+    Description: Private Subnet 2
+    Value: !Ref PrivateSubnet2
+
   AZ1:
     Description: Availability Zone 1
     Value: !GetAtt
