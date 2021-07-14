@@ -38,6 +38,7 @@ Resources:
 
   AutoScalingTarget:
     Type: AWS::ApplicationAutoScaling::ScalableTarget
+    DependsOn: Service
     Properties:
       MinCapacity: 1
       MaxCapacity: 2
@@ -139,7 +140,7 @@ Resources:
       TaskRoleArn: !Ref TaskRole
       ContainerDefinitions:
         - Name: wordcount-container
-          Image: ${AWSAccountNo}.dkr.ecr.us-east-1.amazonaws.com/wordcount-api
+          Image: !Ref REPOUri
           PortMappings:
             - ContainerPort: 8080
           LogConfiguration:
@@ -187,6 +188,7 @@ Resources:
           FromPort: 443
           ToPort: 443
           CidrIp: 0.0.0.0/0
+      VpcId: !Ref VPCID
 
   LoadBalancer:
     Type: AWS::ElasticLoadBalancingV2::LoadBalancer
