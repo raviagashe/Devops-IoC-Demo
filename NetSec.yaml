@@ -1,12 +1,9 @@
 AWSTemplateFormatVersion: 2010-09-09
-Description: Deploy a VPC subnet InternetGateway Route Table and Route
-Metadata: 
-
+Description: Deploy a VPC with other networking resources, a Private DNS Zone and an ECS Repo
 Parameters: 
-
-Mappings: 
-
-Conditions: 
+  DomainName:
+    Type: String
+    Default: wordcount
 
 Resources: 
   VPC:
@@ -126,6 +123,24 @@ Resources:
       SubnetId: !Ref PrivateSubnet2
       RouteTableId: !Ref PrivateRouteTable
 
+  RootDomain:
+    Type: AWS::Route53::HostedZone
+    DependsOn: VPC
+    Properties:
+        HostedZoneConfig: 
+          Comment: 'My hosted zone for ${DomainName} service'
+        Name: !Ref DomainName
+        VPCs: 
+          - 
+            VPCId: !Ref VPC
+            VPCRegion: !Ref "AWS::Region"
+
+
+  ECSRepository:
+     Type: AWS::ECR::Repository
+     Properties:
+         RepositoryName: !Sub "${DomainName}-api"
+
 
 Outputs:
   VPC:
@@ -143,3 +158,10 @@ Outputs:
     Value: !GetAtt
       - PublicSubnet2
       - AvailabilityZone
+
+  REPO:
+    Description: ECR Repository
+    Value: !GetAtt 
+       - ECSRepository
+       - RepositoryUri
+
