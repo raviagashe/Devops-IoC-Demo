@@ -245,6 +245,7 @@ Resources:
       Protocol: HTTP
       VpcId: !Ref VPCID
 
+
   ApiDomain:
     Type: AWS::Route53::RecordSet
     DependsOn: LoadBalancer
