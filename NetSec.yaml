@@ -139,7 +139,7 @@ Resources:
   ECSRepository:
      Type: AWS::ECR::Repository
      Properties:
-         RepositoryName: !Sub "${DomainName}-api"
+         RepositoryName: "simple-wordcount-api"
 
 
 Outputs:
