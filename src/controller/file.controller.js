@@ -22,7 +22,7 @@ const upload = async (req, res) => {
     });
   } catch (err) {
     res.status(500).send({
-      message: `Could not upload the file: ${req.file.originalname}.`,
+      message: `Could not upload the file.`,
     });
     console.log(`Error occured:${err}`);
   }
