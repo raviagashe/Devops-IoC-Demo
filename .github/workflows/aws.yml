@@ -85,5 +85,5 @@ jobs:
       with:
         task-definition: ${{ steps.task-def.outputs.task-definition }}
         service: simple-wordcount-svc
-        cluster: defaultsimple-wordcount-api
+        cluster: simple-wordcount-api
         wait-for-service-stability: true
