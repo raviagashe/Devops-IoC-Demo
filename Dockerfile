@@ -2,13 +2,16 @@ FROM node:16.4-alpine3.14
 
 WORKDIR /usr/apps
 
-COPY package*.json ./
-COPY server.js ./
-COPY src ./
+COPY package-lock.json .
+COPY package.json .
+COPY server.js .
+COPY src .
+
+RUN ls -alR ./*
 
 RUN npm install
 
-COPY node_modules ./
+COPY . .
 
 
 EXPOSE 8080
