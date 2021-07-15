@@ -8,7 +8,7 @@ COPY src .
 
 RUN npm install
 
-COPY . .
+COPY node_modules .
 
 
 EXPOSE 8080
