@@ -3,7 +3,7 @@ Description: Deploy a VPC with other networking resources, a Private DNS Zone an
 Parameters: 
   DomainName:
     Type: String
-    Default: wordcount.com
+    Default: simple-wordcount.com
 
 Resources: 
   VPC:
@@ -13,14 +13,14 @@ Resources:
         EnableDnsHostnames: true
         Tags:
         - Key: Name
-          Value: Wordcount VPC
+          Value: simple-wordcount VPC
 
   InternetGateway:
     Type: AWS::EC2::InternetGateway
     Properties:
       Tags:
       - Key: Name
-        Value: Wordcount Internet Gateway
+        Value: simple-wordcount Internet Gateway
 
   AttachGateway:
     Type: AWS::EC2::VPCGatewayAttachment
