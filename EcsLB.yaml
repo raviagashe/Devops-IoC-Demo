@@ -198,17 +198,6 @@ Resources:
       Subnets:
         - !Ref Subnet1ID
         - !Ref Subnet2ID
-      Listeners:
-        InstancePort: 80
-        InstanceProtocol: HTTP
-        LoadBalancerPort: 80
-        Protocol: HTTP
-      HealthCheck:
-        HealthyThreshold: '10'
-        Interval: '5'
-        Target: '10'
-        Timeout: '15'
-        UnhealthyThreshold: '20'
       SecurityGroups:
         - !GetAtt LoadBalancerSecurityGroup.GroupId
 
@@ -227,15 +216,11 @@ Resources:
     Properties:
       Actions:
        - Type: forward
-      TargetGroupArn: !Ref TargetGroup
-      LoadBalancerArn: !Ref LoadBalancer
-      Port: 80
-      Protocol: tcp
       Priority: 1
       Conditions:
       - Field: path-pattern
         Values: "/*"
-      ListenerArn: !Ref HTTPListener
+      ListenerArn: !Ref HTTPlistener
 
 
   TargetGroup:
