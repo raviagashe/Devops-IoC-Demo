@@ -1,0 +1,334 @@
+AWSTemplateFormatVersion: 2010-09-09
+Description: Deploy a VPC with other networking resources, a Private DNS Zone and an ECS Repo
+Parameters: 
+  DomainName:
+    Type: String
+    Default: simple-wordcount.com
+
+Resources: 
+  WCVPC:
+      Type: AWS::EC2::VPC
+      Properties:
+        CidrBlock: 10.0.0.0/16
+        EnableDnsHostnames: true
+        Tags:
+        - Key: Name
+          Value: simple-wordcount VPC
+
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+      - Key: Name
+        Value: simple-wordcount Internet Gateway
+
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref WCVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  PublicSubnet1:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WCVPC
+      CidrBlock: 10.0.0.0/24
+      AvailabilityZone: !Select 
+        - '0'
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: Public Subnet 1
+
+
+  PublicSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref WCVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: !Select 
+        - '1'
+        - !GetAZs ''
+      Tags:
+        - Key: Name
+          Value: Public Subnet 2
+
+
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref WCVPC
+      Tags:
+        - Key: Name
+          Value: Public Route Table
+
+  PublicRoute:
+    Type: AWS::EC2::Route
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  PublicSubnetRouteTableAssociation1:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet1
+      RouteTableId: !Ref PublicRouteTable
+
+  PublicSubnetRouteTableAssociation2:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet2
+      RouteTableId: !Ref PublicRouteTable
+
+
+  RootDomain:
+    Type: AWS::Route53::HostedZone
+    DependsOn: WCVPC
+    Properties:
+        HostedZoneConfig: 
+          Comment: 'My hosted zone for ${DomainName} service'
+        Name: !Ref DomainName
+        VPCs: 
+          - 
+            VPCId: !Ref WCVPC
+            VPCRegion: !Ref "AWS::Region"
+
+
+  ECSRepository:
+     Type: AWS::ECR::Repository
+     Properties:
+         RepositoryName: "simple-wordcount-api"
+
+
+  AutoScalingRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: 'sts:AssumeRole'
+      ManagedPolicyArns:
+        - 'arn:aws:iam::aws:policy/service-role/AmazonEC2ContainerServiceAutoscaleRole'
+
+  AutoScalingTarget:
+    Type: AWS::ApplicationAutoScaling::ScalableTarget
+    DependsOn: Service
+    Properties:
+      MinCapacity: 1
+      MaxCapacity: 2
+      ResourceId: service/simple-wordcount-api/simple-wordcount-svc
+      ScalableDimension: ecs:service:DesiredCount
+      ServiceNamespace: ecs
+      RoleARN: !GetAtt AutoScalingRole.Arn
+
+  ApiScalingPolicyCPU:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: simple-wordcount-api-svc-cpu
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref AutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageCPUUtilization
+        ScaleInCooldown: 10
+        ScaleOutCooldown: 10
+        TargetValue: 45.0
+
+  ApiScalingPolicyMemory:
+    Type: AWS::ApplicationAutoScaling::ScalingPolicy
+    Properties:
+      PolicyName: simple-wordcount-api-svc-memory
+      PolicyType: TargetTrackingScaling
+      ScalingTargetId: !Ref AutoScalingTarget
+      TargetTrackingScalingPolicyConfiguration:
+        PredefinedMetricSpecification:
+          PredefinedMetricType: ECSServiceAverageMemoryUtilization 
+        ScaleInCooldown: 10
+        ScaleOutCooldown: 10
+        TargetValue: 50.0
+
+  Cluster:
+    Type: AWS::ECS::Cluster
+    Properties:
+      ClusterName: simple-wordcount-api
+
+  LogGroup:
+    Type: AWS::Logs::LogGroup
+    Properties:
+      LogGroupName: simple-wordcount-api-group
+
+  ExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: simple-wordcount-api-role
+      AssumeRolePolicyDocument:
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+            Action: sts:AssumeRole
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AmazonECSTaskExecutionRolePolicy
+
+  TaskRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Statement:
+          - Action: sts:AssumeRole
+            Effect: Allow
+            Principal:
+              Service: ecs-tasks.amazonaws.com
+      Policies:
+        - PolicyDocument:
+            Statement:
+              Action:
+                - ses:SendEmail
+              Effect: Allow
+              Resource: '*'
+          PolicyName: send-mail
+
+  ContainerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: ContainerSecurityGroup
+      GroupDescription: Security group for container
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 8080
+          ToPort: 8080
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref WCVPC
+
+  TaskDefinition:
+    Type: AWS::ECS::TaskDefinition
+    Properties:
+      Family: simple-wordcount-task
+      Cpu: 256
+      Memory: 512
+      NetworkMode: awsvpc
+      ExecutionRoleArn: !Ref ExecutionRole
+      TaskRoleArn: !Ref TaskRole
+      ContainerDefinitions:
+        - Name: simple-wordcount-container
+          Image: !GetAtt ECSRepository.RepositoryUri
+          PortMappings:
+            - ContainerPort: 8080
+          LogConfiguration:
+            LogDriver: awslogs
+            Options:
+              awslogs-region: !Ref AWS::Region
+              awslogs-group: !Ref LogGroup
+              awslogs-stream-prefix: ecs
+      RequiresCompatibilities:
+        - FARGATE
+
+  Service:
+    Type: AWS::ECS::Service
+    DependsOn: HTTPlistener
+    Properties:
+      ServiceName: simple-wordcount-svc
+      Cluster: !Ref Cluster
+      TaskDefinition: !Ref TaskDefinition
+      DesiredCount: 1
+      LaunchType: FARGATE
+      NetworkConfiguration:
+        AwsvpcConfiguration:
+          AssignPublicIp: ENABLED
+          Subnets:
+            - !Ref PublicSubnet1
+            - !Ref PublicSubnet2
+          SecurityGroups:
+            - !GetAtt ContainerSecurityGroup.GroupId
+      LoadBalancers:
+        - TargetGroupArn: !Ref TargetGroup
+          ContainerPort: 8080
+          ContainerName: simple-wordcount-container
+
+  LoadBalancerSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupName: LoadBalancerSecurityGroup
+      GroupDescription: Security group for load balancer
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+      VpcId: !Ref WCVPC
+
+  LoadBalancer:
+    Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+    Properties:
+      Name: simple-wordcount-alb
+      Subnets:
+        - !Ref PublicSubnet1
+        - !Ref PublicSubnet2
+      SecurityGroups:
+        - !GetAtt LoadBalancerSecurityGroup.GroupId
+
+  HTTPlistener:
+   Type: "AWS::ElasticLoadBalancingV2::Listener"
+   Properties:
+     DefaultActions:
+        - Type: forward
+          TargetGroupArn: !Ref TargetGroup
+     LoadBalancerArn: !Ref LoadBalancer
+     Port: 80
+     Protocol: "HTTP"
+
+
+  TargetGroup:
+    Type: AWS::ElasticLoadBalancingV2::TargetGroup
+    DependsOn: LoadBalancer
+    Properties:
+      TargetType: ip
+      Name: simple-wordcount-tg
+      Port: 8080
+      Protocol: HTTP
+      VpcId: !Ref WCVPC
+
+
+  ApiDomain:
+    Type: AWS::Route53::RecordSet
+    DependsOn: LoadBalancer
+    Properties:
+      HostedZoneName: !Sub "${DomainName}."
+      Name: !Sub "api.${DomainName}"
+      Type: CNAME
+      TTL: 60
+      ResourceRecords:
+        - !GetAtt LoadBalancer.DNSName
+
+Outputs:
+
+  AZ1:
+    Description: Availability Zone 1
+    Value: !GetAtt
+      - PublicSubnet1
+      - AvailabilityZone
+
+  AZ2:
+    Description: Availability Zone 2
+    Value: !GetAtt
+      - PublicSubnet2
+      - AvailabilityZone
+
+  ECSREPO:
+    Description: ECR Repository
+    Value: !GetAtt 
+       - ECSRepository
+       - RepositoryUri
+
+  LBDNSName:
+    Description: Service endpoint
+    Value: !GetAtt 
+      - LoadBalancer
+      - DNSName

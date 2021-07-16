@@ -118,7 +118,7 @@ const deletefile = (req, res) => {
         fs.unlinkSync(fpath)
         //file removed
 
-        res.status(200).send("File removed");
+        res.status(200).send({ message: "File removed" },);
     } catch (err) {
         res.status(500).send({
           message: `Could not remove the file: ${fileName}.`,
