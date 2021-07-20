@@ -15,14 +15,6 @@ Parameters:
 
 
 Resources: 
-  # ACMCertificate:
-  #   Type: AWS::CertificateManager::Certificate
-  #   Properties: 
-  #     DomainName: !Sub "api.${DomainName}"
-  #     DomainValidationOptions:
-  #       - DomainName: !Sub "api.${DomainName}"
-  #         ValidationDomain: !Sub "api.${DomainName}"
-  #     ValidationMethod: DNS
 
   AutoScalingRole:
     Type: AWS::IAM::Role
@@ -211,17 +203,6 @@ Resources:
      Port: 80
      Protocol: "HTTP"
 
-  ListenerRule:
-    Type: AWS::ElasticLoadBalancingV2::ListenerRule
-    Properties:
-      Actions:
-       - Type: forward
-      Priority: 1
-      Conditions:
-      - Field: path-pattern
-        Values: "/*"
-      ListenerArn: !Ref HTTPlistener
-
 
   TargetGroup:
     Type: AWS::ElasticLoadBalancingV2::TargetGroup
@@ -245,3 +226,10 @@ Resources:
       ResourceRecords:
         - !GetAtt LoadBalancer.DNSName
 
+Outputs:
+
+  LBDNSName:
+    Description: Service endpoint
+    Value: !GetAtt 
+      - LoadBalancer
+      - DNSName

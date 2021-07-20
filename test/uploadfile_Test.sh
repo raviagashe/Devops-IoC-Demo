@@ -23,10 +23,12 @@ echo 'Uploading ${newdata_fname}'
 curl -s --location --request POST "${service_host_url}/upload" --form file=@${newdata_fname}
 
 echo 'getting server filename'
-remote_file_name=`curl -s --location --request GET "${service_host_url}/files" | jq -c '.[] | select(.url | contains("'${newdata_fname}'")) | {url}' | jq -r .url`
+remote_file_url=`curl -s --location --request GET "${service_host_url}/files" | jq -c '.[] | select(.url | contains("'${newdata_fname}'")) | {url}' | jq -r .url`
+
+remote_file_name=${remote_file_url/http:\/\/localhost:8080\/process/}
 
 echo 'Processing file to get word count'
-remote_word_count=`curl -s --location --request GET ${remote_file_name} | jq -r '.[].count_of_words'`
+remote_word_count=`curl -s --location --request GET ${service_host_url}/process${remote_file_name} | jq -r '.[].count_of_words'`
 
 echo 'Validating test result'
 if [ ${remote_word_count} == ${local_word_count} ]
@@ -36,7 +38,7 @@ then
   echo 'deleting local file'
   rm -v ${newdata_fname}
   echo 'delete remote file'
-  curl -s --location --request GET ${remote_file_name/process/remove}
+  curl -s --location --request GET ${service_host_url}/remove${remote_file_name}
   echo ""
   echo "Testing Successfully completed"
   echo ""
